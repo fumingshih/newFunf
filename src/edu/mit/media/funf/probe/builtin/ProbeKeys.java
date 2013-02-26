@@ -82,13 +82,13 @@ public class ProbeKeys {
 		Z = "z";	
 	}
 	
-	public static interface ActivityKeys extends BaseProbeKeys {
-		public static final String 
-		ACTIVITY_LEVEL = "activityLevel",
-		ACTIVITY_LEVEL_NONE = "none",
-		ACTIVITY_LEVEL_LOW = "low",
-		ACTIVITY_LEVEL_HIGH = "high";
-	}
+    public static interface ActivityKeys extends BaseProbeKeys {
+        public static final String 
+        ACTIVITY_LEVEL = "activityLevel",
+        ACTIVITY_LEVEL_NONE = "none",
+        ACTIVITY_LEVEL_LOW = "low",
+        ACTIVITY_LEVEL_HIGH = "high";
+    }
 	
 	public static interface PedometerKeys extends BaseProbeKeys {
 		public static final String 
@@ -286,7 +286,7 @@ public class ProbeKeys {
 	
 	public static interface ScreenKeys extends BaseProbeKeys {
 		public static final String 
-		SCREEN_ON = "screenOn";
+		SCREEN_ON = "screen_on";
 	}
 	
 	public static interface SmsKeys extends BaseProbeKeys, AndroidInternal.TextBasedSmsColumns {

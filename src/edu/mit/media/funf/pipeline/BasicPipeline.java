@@ -39,7 +39,8 @@ import edu.mit.media.funf.probe.Probe.DataListener;
 
 public class BasicPipeline implements Pipeline, DataListener {
 
-	private Map<String,Schedule> schedules = new HashMap<String, Schedule>();  // Specially named field for collecting schedules
+	@Configurable
+	protected Map<String,Schedule> schedules = new HashMap<String, Schedule>();  // Specially named field for collecting schedules
 	private FunfManager manager;
 	private Gson gson;
 	
