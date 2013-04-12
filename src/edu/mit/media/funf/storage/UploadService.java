@@ -157,26 +157,30 @@ public abstract class UploadService extends Service {
 		numRemoteFailures = (numRemoteFailures == null) ? 0 : numRemoteFailures;
 		Log.i(LogUtil.TAG, "numRemoteFailures:" + numRemoteFailures );
 		Log.i(LogUtil.TAG, "isOnline:" + isOnline(network) );
-		
-		if (numRemoteFailures < MAX_REMOTE_ARCHIVE_RETRIES && isOnline(network)) {
-			Log.i(LogUtil.TAG, "Archiving..." + file.getName());
-			if(remoteArchive.add(file)) {
-				archive.remove(file);
-			} else {
-				Integer numFileFailures = fileFailures.get(file.getName());
-				numFileFailures = (numFileFailures == null) ? 1 : numFileFailures + 1;
-				numRemoteFailures += 1;
-				fileFailures.put(file.getName(), numFileFailures);
-				remoteArchiveFailures.put(remoteArchive.getId(), numRemoteFailures);
-				// 3 Attempts
-				if (numFileFailures < MAX_FILE_RETRIES) {
-					filesToUpload.offer(new ArchiveFile(archive, remoteArchive, file, network));
+		try{// Catch the exception throw from class that implement RemoteArchive interface
+			if (numRemoteFailures < MAX_REMOTE_ARCHIVE_RETRIES && isOnline(network)) {
+				Log.i(LogUtil.TAG, "Archiving..." + file.getName());
+				if(remoteArchive.add(file)) {
+					archive.remove(file);
 				} else {
-					Log.i(LogUtil.TAG, "Failed to upload '" + file.getAbsolutePath() + "' after 3 attempts.");
+					Integer numFileFailures = fileFailures.get(file.getName());
+					numFileFailures = (numFileFailures == null) ? 1 : numFileFailures + 1;
+					numRemoteFailures += 1;
+					fileFailures.put(file.getName(), numFileFailures);
+					remoteArchiveFailures.put(remoteArchive.getId(), numRemoteFailures);
+					// 3 Attempts
+					if (numFileFailures < MAX_FILE_RETRIES) {
+						filesToUpload.offer(new ArchiveFile(archive, remoteArchive, file, network));
+					} else {
+						Log.i(LogUtil.TAG, "Failed to upload '" + file.getAbsolutePath() + 
+								"' after 3 attempts.");
+					}
 				}
+			}else {
+				Log.i(LogUtil.TAG, "Canceling upload.  Remote archive '" + remoteArchive.getId() + "' is not currently available.");
 			}
-		} else {
-			Log.i(LogUtil.TAG, "Canceling upload.  Remote archive '" + remoteArchive.getId() + "' is not currently available.");
+		}catch(Exception e){
+			//do something, different subClass can implement differently
 		}
 	}
 	

@@ -36,7 +36,7 @@ public interface RemoteFileArchive {
 	 * @param file the File to upload
 	 * @return true if successfully added, false otherwise
 	 */
-	public boolean add(File file);
+	public boolean add(File file) throws Exception;
 	
 	
 	/**

@@ -147,8 +147,17 @@ public class DefaultArchive implements FileArchive {
 	public String getPathOnSDCard() {
 		return FileUtil.getSdCardPath(context) + databaseName + "/";
 	}
-	
 	private FileArchive delegateArchive; // Cache
+	/*
+	 * The work that should be done by DefaultArchive (add, contains, getAll()) 
+	 * is implemented through getDelegateArchive. 
+	 * DelegateArchive has two parts: 
+	 * 
+	 * 1) FileDirectoryArchive 2) CompositeFileArchive
+	 * 
+	 * When adding file to archive, it add directly to SDcardPath/packageName/data/backup/
+	 */
+	
 	protected FileArchive getDelegateArchive() {
 		if (delegateArchive == null) {
 			synchronized (this) {
