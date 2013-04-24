@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import com.dropbox.client2.exception.DropboxException;
+
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -157,10 +159,21 @@ public abstract class UploadService extends Service {
 		numRemoteFailures = (numRemoteFailures == null) ? 0 : numRemoteFailures;
 		Log.i(LogUtil.TAG, "numRemoteFailures:" + numRemoteFailures );
 		Log.i(LogUtil.TAG, "isOnline:" + isOnline(network) );
-		try{// Catch the exception throw from class that implement RemoteArchive interface
+		boolean successUpload = false;
+
 			if (numRemoteFailures < MAX_REMOTE_ARCHIVE_RETRIES && isOnline(network)) {
 				Log.i(LogUtil.TAG, "Archiving..." + file.getName());
-				if(remoteArchive.add(file)) {
+				
+		        try{
+		            successUpload = remoteArchive.add(file);
+		        }catch(Exception e){
+		            // Edit by Fuming Shih. Change the structure a little bit, so that the block will catch the exception 
+		        	// being thrown by the subclass. When exception happened, this means that
+		        	// something happen in the remoteArchive.add, subClass of UploadService can
+		        	// use this block to do some customized message.
+		        }
+		          
+				if(successUpload) {
 					archive.remove(file);
 				} else {
 					Integer numFileFailures = fileFailures.get(file.getName());
@@ -179,9 +192,7 @@ public abstract class UploadService extends Service {
 			}else {
 				Log.i(LogUtil.TAG, "Canceling upload.  Remote archive '" + remoteArchive.getId() + "' is not currently available.");
 			}
-		}catch(Exception e){
-			//do something, different subClass can implement differently
-		}
+
 	}
 	
 	/**
