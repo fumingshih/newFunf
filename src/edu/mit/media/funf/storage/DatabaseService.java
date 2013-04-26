@@ -35,8 +35,10 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Binder;
+import android.os.Environment;
 import android.os.IBinder;
 import android.util.Log;
+import edu.mit.media.funf.util.FileUtil;
 import edu.mit.media.funf.util.LogUtil;
 
 /**
@@ -48,16 +50,21 @@ import edu.mit.media.funf.util.LogUtil;
  * This class can be subclassed to provide custom implementations of Archive and 
  * SQliteHelper.Subclasses have no access to data queue.
  * @author alangardner
- *
+ * 
+ * Add abstract method exportDB
+ * @Author fumingshih
  */
 public abstract class DatabaseService extends IntentService {
 
 	
 	public static final String
 		ACTION_RECORD = "edu.mit.media.funf.RECORD",
-		ACTION_ARCHIVE = "edu.mit.media.funf.ARCHIVE";
+		ACTION_ARCHIVE = "edu.mit.media.funf.ARCHIVE",
+		ACTION_CLEAR_BACKUP = "CLEAR_BACKUP",
+		ACTION_EXPORT = "EXPORT"; //export the db file to specific format, for example CSV
 	
 	public static final String DATABASE_NAME_KEY = "DATABASE_NAME";
+	private static final String TAG = "DatabaseService";
 	
 	private Map<String, SQLiteOpenHelper> databaseHelpers; // Cache open database helpers
 
@@ -89,6 +96,10 @@ public abstract class DatabaseService extends IntentService {
 			writeToDatabase(databaseName, intent);
 		} else if (action.equals(ACTION_ARCHIVE)) {
 			runArchive(databaseName);
+		} else if (action.equals(ACTION_EXPORT)) {
+			exportDatabase(databaseName, intent);
+		} else if (action.equals(ACTION_CLEAR_BACKUP)){
+			clearBackup(databaseName, intent);
 		}
 	}
 	
@@ -163,6 +174,60 @@ public abstract class DatabaseService extends IntentService {
 		}
 		db.close();
 	}
+	
+	/**
+	 * Pulls data from the intent to export the data.  
+	 * @param db
+	 * @param intent
+	 * @throws SQLException
+	 */
+	private void exportDatabase(String databaseName, Intent intent) throws SQLException{
+		//only for reading the db
+		SQLiteOpenHelper dbHelper = new SQLiteOpenHelper(this , databaseName, null, 1) {
+			
+			@Override
+			public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+				// TODO Auto-generated method stub
+				
+			}	
+			@Override
+			public void onCreate(SQLiteDatabase db) {
+				// TODO Auto-generated method stub
+				
+			}
+		};
+
+		SQLiteDatabase db = dbHelper.getReadableDatabase();
+		exportDB(db, intent);
+		db.close();
+
+	}
+	
+	/*
+	 * Delete all the files in the /backup folder (used with caution!)
+	 */
+	private void clearBackup(String databaseName, Intent intent){
+		// first find all backup files for this database in the /backup folder than delete them
+		
+		//new File(Environment.getExternalStorageDirectory(), context.getPackageName()) + "/";
+		String backupRoot = FileUtil.getSdCardPath(this) + databaseName + File.separator + "backup";
+//		Log.i(TAG, "backupRoot" + backupRoot);
+		
+		File folder = new File(backupRoot); //f should be a directory
+		
+		for (File file : folder.listFiles()){
+			String fileName = file.getName();
+			//because all backup file has the format of number-number-number_timestamp_number_Databasenmae.db
+			if (fileName.endsWith(databaseName + "." + "db")){
+				file.delete();
+				Log.i(TAG, "Delete:" + fileName);
+			}
+		}
+
+	}
+	
+	protected abstract void exportDB(SQLiteDatabase db, Intent intent) throws SQLException;
+	
 
 	/**
 	 * Binder interface to the probe
