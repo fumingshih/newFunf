@@ -46,6 +46,8 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Environment;
 import android.util.Log;
 import android.util.Pair;
+import edu.mit.media.funf.storage.DirectoryCleaner.CleanAllCleaner;
+import edu.mit.media.funf.storage.DirectoryCleaner.KeepUnderStorageLimit;
 import edu.mit.media.funf.util.FileUtil;
 import edu.mit.media.funf.util.LogUtil;
 import edu.mit.media.funf.util.StringUtil;
@@ -121,6 +123,14 @@ public class NameValueDatabaseService extends DatabaseService {
 		 fileWriters = new HashMap<File, FileWriter>();
 		 exportRoot = new File(Environment.getExternalStorageDirectory(), this.getPackageName()) + 
 		 			File.separator + "export";
+		 
+		 //clear exportRoot if there are previous export files in this folder
+		 File exportFolder = new File(exportRoot);
+		 if(exportFolder.exists()){// if it's created all ready
+			 CleanAllCleaner cleaner = new CleanAllCleaner();
+			 cleaner.clean(exportFolder);
+		 }
+		 
 
 		 String sql = "select name, value, timestamp from data";
 		 Cursor c = db.rawQuery(sql, new String[0]);
