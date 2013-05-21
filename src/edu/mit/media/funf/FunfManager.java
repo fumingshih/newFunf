@@ -344,6 +344,13 @@ public class FunfManager extends Service {
 		}
 	}
 	
+	public void createPipeline(String pipeName, String jsonConfig){
+		JsonElement pipelineConfig = parser.parse(jsonConfig);
+		Pipeline pipeline = gson.fromJson(pipelineConfig, Pipeline.class);
+		registerPipeline(pipeName, pipeline);
+		
+	}
+	
 	public Pipeline getRegisteredPipeline(String name) {
 		return pipelines.get(name);
 	}
