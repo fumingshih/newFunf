@@ -36,7 +36,8 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.WifiLock;
 import android.util.Log;
-
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.Gson;
 
 import edu.mit.media.funf.Schedule;
@@ -54,7 +55,7 @@ import edu.mit.media.funf.util.LogUtil;
 public class WifiProbe extends Base {
 
 	private static final String LOCK_KEY = WifiProbe.class.getName();
-	
+	public static final String TSF = "tsf";
 	private WifiManager wifiManager;
 	private int numberOfAttempts;
 	private int previousWifiState;  // TODO: should this be persisted to disk?
@@ -67,7 +68,12 @@ public class WifiProbe extends Base {
 				if (results != null) {
 					Gson gson = getGson();
 					for (ScanResult result : results) {
-						sendData(gson.toJsonTree(result).getAsJsonObject());
+						JsonObject data = gson.toJsonTree(result).getAsJsonObject();
+                        if (data.has(TIMESTAMP)) {
+                          JsonElement el = data.remove(TIMESTAMP);
+                          data.add(TSF, el);
+                        }
+                        sendData(data);
 					}
 				}
 				if (getState() == State.RUNNING) {

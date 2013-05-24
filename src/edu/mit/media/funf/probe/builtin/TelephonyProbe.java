@@ -41,7 +41,7 @@ import edu.mit.media.funf.probe.builtin.ProbeKeys.TelephonyKeys;
 @RequiredFeatures("android.hardware.telephony")
 @Schedule.DefaultSchedule(interval=604800)
 @DisplayName("Mobile Network Info Probe")
-public class TelephonyProbe extends Base implements TelephonyKeys {
+public class TelephonyProbe extends ImpulseProbe implements TelephonyKeys {
 
 	@Override
 	protected void onStart() {
