@@ -72,6 +72,9 @@ public class SimpleLocationProbe extends Base implements PassiveProbe, LocationK
 	
 	@Configurable
 	private boolean useNetwork = true;
+	
+	@Configurable
+	private boolean useCache = true;
 
 
 	private LocationProbe locationProbe;
@@ -148,6 +151,10 @@ public class SimpleLocationProbe extends Base implements PassiveProbe, LocationK
 		if (!useNetwork) {
 			config.addProperty("useNetwork", false);
 		}
+		if (!useCache) {
+			config.addProperty("useCache", false);
+		}
+		
 		locationProbe = getGson().fromJson(config, LocationProbe.class);
 		locationProbe.registerPassiveListener(listener);
 	}
