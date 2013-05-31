@@ -34,7 +34,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import android.R;
 import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
@@ -81,7 +84,10 @@ public class FunfManager extends Service {
 	
 	public static final String 
 	ACTION_KEEP_ALIVE = "funf.keepalive",
+	ACTION_FOREGROUND = "funf.foreground",
+	ACTION_STOP_FOREGROUND = "funf.stopforeground",
 	ACTION_INTERNAL = "funf.internal";
+	
 	
 	private static final String 
 	PROBE_TYPE = "funf/probe",
@@ -108,6 +114,9 @@ public class FunfManager extends Service {
 	// Maybe instances of probes are different from other, and are created in manager
 	
 	private Scheduler scheduler;
+	
+	private NotificationManager mNM;
+	private static final int NOTIFICATION = 1111;
 
 	@Override
 	public void onCreate() {
@@ -122,7 +131,7 @@ public class FunfManager extends Service {
 		
 		// Load stored pipeline config
 
-
+		Log.i(TAG, "FunfManager:" + this.toString() + "created at:" + System.currentTimeMillis());
 		// TODO: bootstrap from meta parameters if pipelines don't exist
 		Bundle metadata = getMetadata();
 		for (String keyName : metadata.keySet()) {
@@ -137,13 +146,14 @@ public class FunfManager extends Service {
 			Pipeline pipeline = gson.fromJson(pipelineConfig, Pipeline.class);
 			registerPipeline(keyName, pipeline);
 		}
+
 		
 	}
 
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-
+		Log.i(TAG, "FunfManger" + this.toString() +" got kill at:" + System.currentTimeMillis());
 		// TODO: call onDestroy on all pipelines
 		for (Pipeline pipeline : pipelines.values()) {
 			pipeline.onDestroy();
@@ -164,7 +174,18 @@ public class FunfManager extends Service {
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		String action = intent.getAction();
+		if(ACTION_FOREGROUND.equals(action)){
+			//start the service in the foreground
+			Log.i(TAG, "@StartCommand, before startForeground");
+			startForeground();
+		}
+		if(ACTION_STOP_FOREGROUND.equals(action)){
+			//stop the foreground
+			Log.i(TAG, "@StartCommand, before stopForeground");
+			stopForeground();
+		}
 		if (action == null || ACTION_KEEP_ALIVE.equals(action)) {
+			Log.i(TAG, "FunfManager:" + this.toString() + " keep alive at:" + System.currentTimeMillis());
 			// Does nothing, but wakes up FunfManager
 		} else if (ACTION_INTERNAL.equals(action)) {
 			String type = intent.getType();
@@ -255,6 +276,44 @@ public class FunfManager extends Service {
 		return Service.START_FLAG_RETRY; // TODO: may want the last intent always redelivered to make sure system starts up
 	}
 
+	private void startForeground(){
+		Log.i(TAG, "FunfManager:" + this.toString() + "started as foreground");
+		
+		String className = "";
+		String packageName = this.getPackageName();
+		Intent launchIntent = this.getPackageManager().getLaunchIntentForPackage(packageName);
+		if (launchIntent != null) {
+			className = launchIntent.getComponent().getClassName();
+		}
+		// Prepare intent for launching notification that is 
+		// ready to call the main Launch class in the application
+		Intent intent = new Intent(this.getApplicationContext(), FunfManager.class);
+		ComponentName component = new ComponentName(packageName, className);
+		intent.setComponent(component);
+		intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+	    
+	    int icon = android.R.drawable.star_big_on;
+	    long when = System.currentTimeMillis();
+	    Notification foregroundSvcNotify = new Notification(icon,
+	        "Activate Notification!", when);
+
+	    foregroundSvcNotify.defaults |= Notification.DEFAULT_VIBRATE;
+	    
+	    PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, 0);
+	    
+	    foregroundSvcNotify.setLatestEventInfo(this, (CharSequence)"Start Sensing", 
+	                      (CharSequence)"Collecting Sensor Info", contentIntent);
+
+
+	    startForeground(NOTIFICATION, foregroundSvcNotify);
+	}
+	
+	private void stopForeground(){
+		Log.i(TAG, "FunfManager:" + this.toString() + "stop being foreground");
+		this.stopForeground(true);
+		
+	}
+	
 	private Bundle getMetadata() {
 		try {
 			Bundle metadata = getPackageManager().getServiceInfo(new ComponentName(this, this.getClass()), PackageManager.GET_META_DATA).metaData;
@@ -561,6 +620,7 @@ public class FunfManager extends Service {
 	
 	public class LocalBinder extends Binder {
 		public FunfManager getManager() {
+			Log.i(TAG, "returning FunfManger:" + FunfManager.this.toString());
 			return FunfManager.this;
 		}
 	}
