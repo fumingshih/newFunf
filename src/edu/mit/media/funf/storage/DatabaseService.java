@@ -156,7 +156,7 @@ public abstract class DatabaseService extends IntentService {
 	/**
 	 * Write data to the database in a transaction
 	 * NOTE: Should only be called by one thread at a time (the writeThread)
-	 * @param datum
+	 * @param databaseName
 	 */
 	private void writeToDatabase(String databaseName, Intent intent) {
 		Log.i(LogUtil.TAG, "Writing to database");
@@ -183,19 +183,22 @@ public abstract class DatabaseService extends IntentService {
 	 */
 	private void exportDatabase(String databaseName, Intent intent) throws SQLException{
 		//only for reading the db
-		SQLiteOpenHelper dbHelper = new SQLiteOpenHelper(this , databaseName, null, 1) {
-			
-			@Override
-			public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-				// TODO Auto-generated method stub
-				
-			}	
-			@Override
-			public void onCreate(SQLiteDatabase db) {
-				// TODO Auto-generated method stub
-				
-			}
-		};
+//		SQLiteOpenHelper dbHelper = new SQLiteOpenHelper(this , databaseName, null, 1) {
+//
+//			@Override
+//			public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+//				// TODO Auto-generated method stub
+//
+//			}
+//			@Override
+//			public void onCreate(SQLiteDatabase db) {
+//				// TODO Auto-generated method stub
+//
+//			}
+//		};
+
+    SQLiteOpenHelper dbHelper = new NameValueDatabaseHelper(this, databaseName,
+        NameValueDatabaseHelper.CURRENT_VERSION);
 
 		SQLiteDatabase db = dbHelper.getReadableDatabase();
 		exportDB(db, intent);
