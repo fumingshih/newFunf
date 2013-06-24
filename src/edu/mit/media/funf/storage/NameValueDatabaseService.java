@@ -281,8 +281,9 @@ public class NameValueDatabaseService extends DatabaseService {
 
 		StringBuffer row = new StringBuffer();
 
+		String quote = "\"";
 		String delim = ",";
-		String space = " ";
+		String escapeQuote = "\"\"";
 		String probeName = jobject.getAsJsonPrimitive("probe").getAsString();
 		// Special case for SMSProbe and CallLogProbe because some phones
 		// (users) will disable some fields for privacy
@@ -302,9 +303,12 @@ public class NameValueDatabaseService extends DatabaseService {
 				rowlist.add(jPrim.toString());
 				// row.append(jPrim.toString());
 			} else {
-				// need to remove all nested comma within the object, or else
-				// csv will treat it as another item
-				String cleaned = obj.toString().replace(delim, space);
+				// "wifiSsid":{"octets":{"buf":[65,69,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"count":2}}
+				// the value of "wifiSsid" needs to be changed to 
+				// "{""octets"":{""buf"":[65,69,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],""count"":2}}				
+				//http://stackoverflow.com/questions/12473480/how-should-i-escape-commas-and-speech-marks-in-csv-files-so-they-work-in-excel
+				// first we escape quote by adding a quote in front of it
+				String cleaned = obj.toString().replace(quote, escapeQuote);
 				// anything that's not JsonPrimitive we will make it a String
 				rowlist.add("\"" + cleaned + "\"");
 
