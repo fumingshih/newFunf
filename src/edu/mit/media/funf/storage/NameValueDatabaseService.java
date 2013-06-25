@@ -61,6 +61,8 @@ public class NameValueDatabaseService extends DatabaseService {
 	private static final String TAG = "NameValueDatabaseService";
 	public static final String EXPORT_CSV = "csv";
 	public static final String EXPORT_JSON = "json";
+	private final String TIMESTAMP = "timestamp";
+	private final String TIMEZONEOFFSET = "timezoneOffset";
 
 	// this will keeps a record of the opened writer handle during export, and
 	// needs to closed it at the end
@@ -291,6 +293,8 @@ public class NameValueDatabaseService extends DatabaseService {
 				|| probeName
 						.equals("edu.mit.media.funf.probe.builtin.CallLogProbe"))
 			return convertSMSnCallLog(value, firstTime);
+		if (probeName.equals("edu.mit.media.funf.probe.buitltin.BluetoothProbe"))
+			return convertBluetooth(value, firstTime);
 
 		jobject.remove("probe"); // remove the redundant property name
 
@@ -346,6 +350,79 @@ public class NameValueDatabaseService extends DatabaseService {
 
 		return returnVal.toString();
 
+	}
+
+	private String convertBluetooth(String value, boolean firstTime) {
+		JsonElement jelement = new JsonParser().parse(value);
+		JsonObject  jobject = jelement.getAsJsonObject();
+		StringBuffer returnVal = new StringBuffer();
+
+		StringBuffer row = new StringBuffer();
+		
+		String delim = ",";
+		String space = " ";
+		String probeName = jobject.getAsJsonPrimitive("probe").getAsString();
+ 
+		jobject.remove("probe"); //remove the redundant property name
+
+		// for SMS probe's header
+		ArrayList<String> BluetoothHeader = new ArrayList<String>();
+
+		BluetoothHeader.add(ProbeKeys.BluetoothKeys.RSSI);
+		BluetoothHeader.add(ProbeKeys.BluetoothKeys.DEVICE);
+		BluetoothHeader.add(ProbeKeys.BluetoothKeys.NAME);
+		BluetoothHeader.add(ProbeKeys.BluetoothKeys.CLASS);
+
+		headerlist = BluetoothHeader;
+		headerlist.add(TIMESTAMP);
+		headerlist.add(TIMEZONEOFFSET);
+
+		
+		for (String columnName : headerlist) {
+			JsonElement obj = jobject.get(columnName);
+			if (obj == null) {
+				Log.i(TAG, "this has no value for field:" + columnName);
+				rowlist.add("\"" + "N/A" + "\"");
+			} else {
+				if (obj instanceof JsonPrimitive) {
+					JsonPrimitive jPrim = obj.getAsJsonPrimitive();
+					Log.i(TAG, "JPrimitive: " + jPrim.toString());
+					rowlist.add(jPrim.toString());
+				} else {
+					// need to remove all nested comma within the object, or
+					// else csv will treat it as another item
+					String cleaned = obj.toString().replace(delim, space);
+					// anything that's not JsonPrimitive we will make it a
+					// String
+					rowlist.add("\"" + cleaned + "\"");
+				}
+
+			}
+		}
+ 
+		if (firstTime) {
+			
+			String header = StringUtil.join(headerlist, delim);
+			String rowval = StringUtil.join(rowlist, delim);
+			returnVal.append(header);
+			returnVal.append("\n");
+			returnVal.append(rowval);
+			returnVal.append("\n");
+			Log.d(TAG, "Header + row:" + returnVal.toString());
+			 
+		} else {
+			String rowval = StringUtil.join(rowlist, delim);
+			returnVal.append(rowval);
+			returnVal.append("\n");
+			Log.d(TAG, "Row only:" + returnVal.toString());
+			
+		}
+		
+		//clean up both arraylists
+		rowlist.clear();
+		headerlist.clear();
+		
+		return returnVal.toString();
 	}
 
 	/**
