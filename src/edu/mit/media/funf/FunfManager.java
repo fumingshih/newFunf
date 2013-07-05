@@ -417,7 +417,8 @@ public class FunfManager extends Service {
 	public void unregisterPipeline(String name) {
 		Pipeline existingPipeline = pipelines.get(name);
 		if (existingPipeline != null) {
-			existingPipeline.onDestroy();
+//			existingPipeline.onDestroy();
+			pipelines.remove(name);
 		}
 	}
 	
