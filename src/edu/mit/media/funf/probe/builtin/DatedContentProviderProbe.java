@@ -62,10 +62,15 @@ public abstract class DatedContentProviderProbe extends ContentProviderProbe imp
 		}
 		String dateFilter = null;
 		String[] dateFilterParams = null;
+		BigDecimal startingDate = null;
 		if (afterDate != null || latestTimestamp != null) {
 			dateFilter = dateColumn + " > ?";
-			BigDecimal startingDate = afterDate == null ? latestTimestamp : 
-						afterDate.max(latestTimestamp == null ? BigDecimal.ZERO : latestTimestamp);
+			if (afterDate != null)
+				startingDate = afterDate; //if afterDate exists, it will overwrite lastestTimestamp
+			else
+				startingDate = latestTimestamp;
+//			BigDecimal startingDate = afterDate == null ? latestTimestamp : 
+//						afterDate.max(latestTimestamp == null ? BigDecimal.ZERO : latestTimestamp);
 			dateFilterParams = new String[] {String.valueOf(getDateColumnTimeUnit().convert(startingDate, DecimalTimeUnit.SECONDS))};
 		}
 		return getContext().getContentResolver().query(
