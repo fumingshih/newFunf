@@ -463,6 +463,7 @@ public class NameValueDatabaseService extends DatabaseService {
 		CallLogHeader.add(ProbeKeys.CallLogKeys.NAME);
 		CallLogHeader.add(ProbeKeys.CallLogKeys.NUMBER);
 		CallLogHeader.add(ProbeKeys.CallLogKeys.NUMBER_TYPE);
+		CallLogHeader.add(ProbeKeys.CallLogKeys.TYPE);
 		
 		if(probeName.equals("edu.mit.media.funf.probe.builtin.SmsProbe")){
 			headerlist = SMSHeader;
