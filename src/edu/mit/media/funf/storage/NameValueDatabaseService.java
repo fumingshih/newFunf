@@ -212,8 +212,9 @@ public class NameValueDatabaseService extends DatabaseService {
 
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
+				Log.i(TAG, "Problem for reading the file, some other process might lock the file");
 				e.printStackTrace();
-			}
+			} 
 			return new Pair<BufferedWriter, Boolean>(bw, new Boolean(true));
 
 		} else {
@@ -233,7 +234,12 @@ public class NameValueDatabaseService extends DatabaseService {
 		File file = getOrCreateFile(filename);
 		//
 		Pair<BufferedWriter, Boolean> bwPair = getOrCreateBufferedWriter(file);
-
+		
+		//its possible that when getOrCreateBuffereredWriter(file) other process is reading/writing 
+		//the file, so that bwPair's bufferedWriter is null
+		if (bwPair.first == null)	{		
+			return; //do nothing, this row of value will not be written to the file
+		}
 		BufferedWriter bw = bwPair.first;
 		Boolean firstTime = bwPair.second;
 
@@ -297,6 +303,7 @@ public class NameValueDatabaseService extends DatabaseService {
 			return convertBluetooth(value, firstTime);
 
 		jobject.remove("probe"); // remove the redundant property name
+		jobject.remove("mExtras"); // remove redundant data from Location Probe.
 
 		for (Map.Entry<String, JsonElement> ele : jobject.entrySet()) {
 

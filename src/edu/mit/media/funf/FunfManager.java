@@ -43,6 +43,7 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
@@ -301,8 +302,19 @@ public class FunfManager extends Service {
 	    
 	    PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, 0);
 	    
-	    foregroundSvcNotify.setLatestEventInfo(this, (CharSequence)"Start Sensing", 
-	                      (CharSequence)"Collecting Sensor Info", contentIntent);
+	    // figure out the application name and put it on the notification label
+		PackageManager pm = this.getPackageManager();
+		ApplicationInfo ai;
+		try {
+			ai = pm.getApplicationInfo(this.getPackageName(), 0);
+		} catch (final NameNotFoundException e) {
+			ai = null;
+		}
+		String applicationName = (String) (ai != null ? pm
+				.getApplicationLabel(ai) : "(unknown)");
+ 
+	    foregroundSvcNotify.setLatestEventInfo(this, (CharSequence)applicationName + " is sensing", 
+	                      (CharSequence)"Collecting data", contentIntent);
 
 
 	    startForeground(NOTIFICATION, foregroundSvcNotify);
