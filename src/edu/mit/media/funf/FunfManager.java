@@ -170,6 +170,7 @@ public class FunfManager extends Service {
 			((Probe)probeObject).destroy();
 		}
 		getProbeFactory().clearCache();
+		// TODO: write launcher isLaunched as false
 	}
 	
 	@Override
@@ -324,6 +325,12 @@ public class FunfManager extends Service {
 		Log.i(TAG, "FunfManager:" + this.toString() + "stop being foreground");
 		this.stopForeground(true);
 		
+	}
+	//return true if there's no dataRequests and no pipelines registered
+	public boolean hasRegisteredJobs(){
+		
+		return (pipelines.isEmpty() && dataRequests.isEmpty());
+
 	}
 	
 	private Bundle getMetadata() {
