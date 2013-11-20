@@ -314,8 +314,8 @@ public class FunfManager extends Service {
 		String applicationName = (String) (ai != null ? pm
 				.getApplicationLabel(ai) : "(unknown)");
  
-	    foregroundSvcNotify.setLatestEventInfo(this, (CharSequence)applicationName + " is sensing", 
-	                      (CharSequence)"Collecting data", contentIntent);
+	    foregroundSvcNotify.setLatestEventInfo(this, (CharSequence)applicationName + " is working", 
+	                      (CharSequence)"Service running", contentIntent);
 
 
 	    startForeground(NOTIFICATION, foregroundSvcNotify);
@@ -328,8 +328,7 @@ public class FunfManager extends Service {
 	}
 	//return true if there's no dataRequests and no pipelines registered
 	public boolean hasRegisteredJobs(){
-		
-		return (pipelines.isEmpty() && dataRequests.isEmpty());
+		return (pipelines.size()!=0 || dataRequests.size()!=0);
 
 	}
 	
