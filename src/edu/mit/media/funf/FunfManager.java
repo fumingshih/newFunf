@@ -103,7 +103,8 @@ public class FunfManager extends Service {
 	private Handler handler;
 	private JsonParser parser;
 	private Map<String,Pipeline> pipelines;
-	private Map<IJsonObject,List<DataRequestInfo>> dataRequests; 	
+	private Map<IJsonObject,List<DataRequestInfo>> dataRequests; 
+	private int numScheduler = 0;
 	private class DataRequestInfo {
 		private DataListener listener;
 		private Schedule schedule;
@@ -328,7 +329,9 @@ public class FunfManager extends Service {
 	}
 	//return true if there's no dataRequests and no pipelines registered
 	public boolean hasRegisteredJobs(){
-		return (pipelines.size()!=0 || dataRequests.size()!=0);
+		//return (pipelines.size()!=0 || dataRequests.size()!=0);
+		// if the total number of Alarms is zero, it means that no pipeline has waiting action to perform
+		return (scheduler.numOfAlarms!=0 || dataRequests.size()!=0);
 
 	}
 	
@@ -554,6 +557,7 @@ public class FunfManager extends Service {
 		String name = getPipelineName(pipeline);
 		if (name != null) {
 			scheduler.set(PIPELINE_TYPE, getComponenentUri(name, action), schedule);
+			
 		}
 	}
 	
@@ -705,6 +709,7 @@ public class FunfManager extends Service {
 	
 		private AlarmManager alarmManager;
 		private Context context;
+		private int numOfAlarms;
 		
 		// private Map<Pipeline,Config,Schedule>
 		// Need to be able to merge schedules for common types quickly, across pipelines
@@ -721,6 +726,7 @@ public class FunfManager extends Service {
 		public Scheduler() {
 			this.alarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
 			this.context = FunfManager.this;
+			this.numOfAlarms = 0;
 		}
 		
 		
@@ -729,7 +735,11 @@ public class FunfManager extends Service {
 			PendingIntent operation = PendingIntent.getService(context, 0, intent, PendingIntent.FLAG_NO_CREATE);
 			if (operation != null) {
 				operation.cancel();
+				if (numOfAlarms != 0) {
+					numOfAlarms -= 1;
+				}
 			}
+
 		}
 		
 		public void cancel(String type, String component, String action) {
@@ -767,8 +777,12 @@ public class FunfManager extends Service {
 						alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, startTimeMillis, intervalMillis, operation);
 					}
 				}
+				numOfAlarms += 1;
 			}
 						
+		}
+		public int numOfAlarms(){
+			return numOfAlarms;
 		}
 		
 		// TODO: Feature to wait a certain amount of seconds after boot to begin
