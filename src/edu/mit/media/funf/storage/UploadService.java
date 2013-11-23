@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import com.dropbox.client2.exception.DropboxException;
 
 import android.app.Service;
 import android.content.Context;

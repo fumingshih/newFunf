@@ -39,6 +39,9 @@ import com.google.gson.JsonPrimitive;
 
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
@@ -47,6 +50,8 @@ import android.os.Environment;
 import android.util.Log;
 import android.util.Pair;
 import edu.mit.media.funf.probe.builtin.ProbeKeys;
+import edu.mit.media.funf.probe.builtin.ProbeKeys.BaseProbeKeys;
+import edu.mit.media.funf.probe.builtin.ProbeKeys.SensorKeys;
 import edu.mit.media.funf.storage.DirectoryCleaner.CleanAllCleaner;
 import edu.mit.media.funf.storage.DirectoryCleaner.KeepUnderStorageLimit;
 import edu.mit.media.funf.util.FileUtil;
@@ -73,8 +78,8 @@ public class NameValueDatabaseService extends DatabaseService {
 	// public static enum ExportType{CSV, JSON, XML};
 	private String exportType;
 	private String exportRoot;
-	private ArrayList<String> headerlist = new ArrayList<String>();
-	private ArrayList rowlist = new ArrayList();
+//	private ArrayList<String> headerlist = new ArrayList<String>();
+//	private ArrayList rowlist = new ArrayList();
 
 	/**
 	 * The NameValueDatabaseHelper
@@ -227,10 +232,8 @@ public class NameValueDatabaseService extends DatabaseService {
 	private void writefile(String probename, String value, long timestamp) {
 		// probename: edu.mit.media.funf.probe.builtin.BluetoothProbe
 		Log.d(TAG, "value:" + value);
-		String filename = probename.substring(probename.lastIndexOf(".") + 1);// filename
-																				// should
-																				// be
-																				// "BluetoothProbe"
+		// filename should be "BluetoothProbe"
+		String filename = probename.substring(probename.lastIndexOf(".") + 1);
 		File file = getOrCreateFile(filename);
 		//
 		Pair<BufferedWriter, Boolean> bwPair = getOrCreateBufferedWriter(file);
@@ -246,8 +249,8 @@ public class NameValueDatabaseService extends DatabaseService {
 		Log.i(TAG, "export type:" + exportType);
 		if (this.exportType.equals(EXPORT_CSV)) {
 			Log.i(TAG, "before convertCSV....");
-			String row = convertCSV(value, firstTime.booleanValue());
-			try {
+			try{
+			  	String row = convertCSVnew(value, firstTime.booleanValue());
 				bw.append(row);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -270,6 +273,267 @@ public class NameValueDatabaseService extends DatabaseService {
 		;
 
 	}
+	
+	private ArrayList<String> prepareHeader(String probeName){
+		ArrayList<String> headerlist = new ArrayList<String>();
+		// add Timestamp as the first column
+		headerlist.add(TIMESTAMP); 
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.WifiProbe")){
+			headerlist.add(ProbeKeys.WifiKeys.BSSID);
+			headerlist.add(ProbeKeys.WifiKeys.SSID);
+			headerlist.add(ProbeKeys.WifiKeys.LEVEL);
+			headerlist.add(ProbeKeys.WifiKeys.CAPABILITIES);
+			headerlist.add(ProbeKeys.WifiKeys.FREQUENCY);
+
+		}
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.TelephonyProbe")){
+		  
+			headerlist.add(ProbeKeys.TelephonyKeys.DEVICE_ID);
+			headerlist.add(ProbeKeys.TelephonyKeys.LINE_1_NUMBER);
+			headerlist.add(ProbeKeys.TelephonyKeys.VOICEMAIL_NUMBER);
+			headerlist.add(ProbeKeys.TelephonyKeys.SIM_SERIAL_NUMBER);
+			headerlist.add(ProbeKeys.TelephonyKeys.SIM_OPERATOR);
+			headerlist.add(ProbeKeys.TelephonyKeys.SIM_OPERATOR_NAME);
+			headerlist.add(ProbeKeys.TelephonyKeys.NETWORK_COUNTRY_ISO);
+			headerlist.add(ProbeKeys.TelephonyKeys.NETWORK_OPERATOR);
+			headerlist.add(ProbeKeys.TelephonyKeys.NETWORK_OPERATOR_NAME);
+
+			
+		}
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.BluetoothProbe")){
+			headerlist.add(ProbeKeys.BluetoothKeys.DEVICE);
+			headerlist.add(ProbeKeys.BluetoothKeys.NAME);
+			headerlist.add(ProbeKeys.BluetoothKeys.RSSI);
+			headerlist.add(ProbeKeys.BluetoothKeys.CLASS);
+		}
+			
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.SmsProbe")){
+			headerlist.add(ProbeKeys.SmsKeys.DATE);
+			headerlist.add(ProbeKeys.SmsKeys.ADDRESS);
+			headerlist.add(ProbeKeys.SmsKeys.BODY);
+			headerlist.add(ProbeKeys.SmsKeys.TYPE);
+			headerlist.add(ProbeKeys.SmsKeys.READ);
+		
+		}
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.ScreenProbe")){
+			headerlist.add(ProbeKeys.ScreenKeys.SCREEN_ON);
+			
+		}
+			
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.RunningApplicationsProbe")){
+			headerlist.add(ProbeKeys.RunningApplicationsKeys.TASK_INFO);
+			headerlist.add(ProbeKeys.RunningApplicationsKeys.DURATION);	
+		}
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.ProximitySensorProbe")){
+			headerlist.add(ProbeKeys.ProximitySensorKeys.DISTANCE);
+			
+		}
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.PedometerProbe")){
+			headerlist.add(ProbeKeys.PedometerKeys.RAW_VALUE);
+			
+		}
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.SimpleLocationProbe")){
+			headerlist.add(ProbeKeys.LocationKeys.LATITUDE);
+			headerlist.add(ProbeKeys.LocationKeys.LONGITUDE);
+			headerlist.add(ProbeKeys.LocationKeys.ACCURACY);
+		}
+			
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.LightSensorProbe")){
+			headerlist.add(ProbeKeys.LightSensorKeys.LUX);			
+		}
+			
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.CellTowerProbe")){
+
+			headerlist.add(ProbeKeys.CellKeys.CID);
+			headerlist.add(ProbeKeys.CellKeys.LAC);
+
+		}
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.CallLogProbe")){
+			headerlist.add(ProbeKeys.CallLogKeys.DATE);
+			headerlist.add(ProbeKeys.CallLogKeys.DURATION);
+			headerlist.add(ProbeKeys.CallLogKeys.NAME);
+			headerlist.add(ProbeKeys.CallLogKeys.NUMBER);
+			headerlist.add(ProbeKeys.CallLogKeys.NUMBER_TYPE);
+			headerlist.add(ProbeKeys.CallLogKeys.TYPE);
+			
+		}
+
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.BatteryProbe")){
+			headerlist.add(ProbeKeys.BatteryKeys.LEVEL);		
+		}
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.ActivityProbe")){
+			headerlist.add(ProbeKeys.ActivityKeys.ACTIVITY_LEVEL);
+		}
+		
+		// add timeOffset as the last column
+		headerlist.add(TIMEZONEOFFSET);
+		
+		return headerlist;
+	}
+	
+	//helper function to parse running app's taskInfo 
+	private String getAppName(JsonElement taskInfo){
+	  
+//	  {"baseIntent":{
+//				"mAction":"android.intent.action.MAIN",
+//        		"mCategories":["android.intent.category.HOME"],
+//        		"mComponent":{
+//             		"mClass":"com.android.launcher2.Launcher",
+//             		"mPackage":"com.android.launcher"},
+//             	"mFlags":274726912},
+//        "id":258,
+//        "persistentId":258}	  
+	  
+	  Log.i(TAG, "taskInfo:" + taskInfo);
+	  String packageName = "";
+	  try{
+		JsonElement baseIntent = taskInfo.getAsJsonObject().get("baseIntent");
+		JsonElement mComponent = baseIntent.getAsJsonObject().get("mComponent");
+		JsonElement mPackage = mComponent.getAsJsonObject().get("mPackage");
+		Log.i(TAG, "mPackage:" + mPackage);
+		packageName = mPackage.getAsJsonPrimitive().getAsString();
+	  }catch(Exception e){
+		packageName = "";
+	  }
+	  
+	  final PackageManager pm = getApplicationContext().getPackageManager();
+	  ApplicationInfo ai;
+	  try {
+	      ai = pm.getApplicationInfo(packageName, 0);
+	  } catch (final NameNotFoundException e) {
+	      ai = null;
+	  }
+	  final String applicationName = (String) (ai != null ? pm.getApplicationLabel(ai) : "(unknown)");
+	  return applicationName;
+	}
+	
+	
+	// helper function to parse jsonElement of Bluetooth info; e.g. CLASS and DEVICE
+	private String getBluetoothInfo(String columnName, JsonElement jsonEle){
+		/*
+		 * The returned JsonElements
+		 * {"android.bluetooth.device.extra.CLASS":{"mClass":3670284},
+		 * "android.bluetooth.device.extra.DEVICE"
+		 * :{"mAddress":"00:23:39:A4:66:21"},
+		 * "android.bluetooth.device.extra.NAME":"someone's mackbook",
+		 * "android.bluetooth.device.extra.RSSI"
+		 * :-35,"timestamp":1339360144.799}
+		 */  
+
+	  try{
+		
+		if (columnName.equals(ProbeKeys.BluetoothKeys.DEVICE)){
+		  //{"mAddress":"00:23:39:A4:66:21"}
+		  JsonElement mAddress = jsonEle.getAsJsonObject().get("mAddress");
+		  Log.i(TAG, "blueAddress:" + mAddress);
+		  return mAddress.getAsString();
+		
+		}
+		if (columnName.equals(ProbeKeys.BluetoothKeys.CLASS)){
+		  //{"mClass":3670284}
+		  JsonElement mClass = jsonEle.getAsJsonObject().get("mClass");
+		  Log.i(TAG, "mClass:" + mClass);
+		  return mClass.getAsString();
+		}
+		
+	  }catch (Exception e){
+		//it's possible that there's some weird (ill-formatted) or mission field
+		return "";
+	  }
+	  
+	  return "";	  
+	}
+	
+	//Some column's value has another jsonObject
+	// this is the helper function
+	private String parseComplexItem(String probeName, String columnName, JsonElement jsonEle){
+	  
+	  String value = "";
+	  String delim = ",";
+	  String space = " ";
+	  Log.i(TAG, "columnName:" + columnName);
+	  if (probeName.equals("edu.mit.media.funf.probe.builtin.RunningApplicationsProbe")){	
+		return getAppName(jsonEle);
+	  }
+	  if (probeName.equals("edu.mit.media.funf.probe.builtin.BluetoothProbe")){
+		return getBluetoothInfo(columnName, jsonEle);
+		
+	  }
+		
+	  else{
+		// need to remove all nested comma within the object, or
+		// else csv will treat it as another item
+		// clean up the jsonElem
+		String cleaned = jsonEle.toString().replace(delim, space);
+		value = "\"" + cleaned + "\"";
+	  }
+	  
+	  return value;
+	  
+	}
+	
+	private String convertCSVnew(String value, boolean firstTime){
+		JsonElement jelement = new JsonParser().parse(value);
+		JsonObject  jobject = jelement.getAsJsonObject();
+		StringBuffer returnVal = new StringBuffer();
+		
+		String delim = ",";
+		String probeName = jobject.getAsJsonPrimitive("probe").getAsString();
+		Log.i(TAG, "probe name:" + probeName);
+		ArrayList<String> headerlist = prepareHeader(probeName);
+		ArrayList rowlist = new ArrayList();
+		 
+		jobject.remove("probe"); //remove the redundant property name
+		
+		for (String columnName : headerlist) {
+			JsonElement obj = jobject.get(columnName);
+			if (obj == null) {
+				Log.i(TAG, "this has no value for field:" + columnName);
+				rowlist.add("\"" + "N/A" + "\"");
+			} else {
+				if (obj instanceof JsonPrimitive) {
+					JsonPrimitive jPrim = obj.getAsJsonPrimitive();
+					//Log.i(TAG, "JPrimitive: " + jPrim.toString());
+					if (columnName.equals(TIMESTAMP)){
+					// when export, we only keep the epoch time to second but not to millisecond
+					  Double timestamp = Math.ceil(jPrim.getAsDouble());
+					  rowlist.add(timestamp.toString());
+					}else {
+					  rowlist.add(jPrim.toString());
+					}
+				} else {
+				  	  rowlist.add(parseComplexItem(probeName, columnName, obj));  
+				  	}
+				}
+
+			}
+		if (firstTime) {
+			
+			String header = StringUtil.join(headerlist, delim);
+			String rowval = StringUtil.join(rowlist, delim);
+			returnVal.append(header);
+			returnVal.append("\n");
+			returnVal.append(rowval);
+			returnVal.append("\n");
+			Log.d(TAG, "Header + row:" + returnVal.toString());
+			 
+		} else {
+			String rowval = StringUtil.join(rowlist, delim);
+			returnVal.append(rowval);
+			returnVal.append("\n");
+			Log.d(TAG, "Row only:" + returnVal.toString());
+			
+		}
+		
+		//clean up both arraylists to be garbage collected
+		rowlist.clear();
+		headerlist.clear();
+
+		
+		return returnVal.toString();
+
+	}
+	
 
 	private String convertCSV(String value, boolean firstTime) {
 		// TODO Parse json string and write to csv row
@@ -282,7 +546,8 @@ public class NameValueDatabaseService extends DatabaseService {
 		// "wifiSsid":{"octets":{"buf":[65,69,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"count":2}},
 		// "probe":"edu.mit.media.funf.probe.builtin.WifiProbe",
 		// "timezoneOffset":-1.4400000E+10}
-
+	  	ArrayList rowlist = new ArrayList();
+	  	ArrayList<String> headerlist = new ArrayList<String>();
 		JsonElement jelement = new JsonParser().parse(value);
 		JsonObject jobject = jelement.getAsJsonObject();
 		StringBuffer returnVal = new StringBuffer();
@@ -293,18 +558,25 @@ public class NameValueDatabaseService extends DatabaseService {
 		String delim = ",";
 		String escapeQuote = "\"\"";
 		String probeName = jobject.getAsJsonPrimitive("probe").getAsString();
+		
+		//Specialize formatting 
+		
 		// Special case for SMSProbe and CallLogProbe because some phones
 		// (users) will disable some fields for privacy
 		if (probeName.equals("edu.mit.media.funf.probe.builtin.SmsProbe")
 				|| probeName
 						.equals("edu.mit.media.funf.probe.builtin.CallLogProbe"))
 			return convertSMSnCallLog(value, firstTime);
-		if (probeName.equals("edu.mit.media.funf.probe.buitltin.BluetoothProbe"))
+		if (probeName.equals("edu.mit.media.funf.probe.builtin.BluetoothProbe"))
 			return convertBluetooth(value, firstTime);
 
 		jobject.remove("probe"); // remove the redundant property name
 		jobject.remove("mExtras"); // remove redundant data from Location Probe.
 
+		//re-order and message the json object here
+		
+		
+		
 		for (Map.Entry<String, JsonElement> ele : jobject.entrySet()) {
 
 			JsonElement obj = ele.getValue();
@@ -360,6 +632,9 @@ public class NameValueDatabaseService extends DatabaseService {
 	}
 
 	private String convertBluetooth(String value, boolean firstTime) {
+	  	ArrayList rowlist = new ArrayList();
+	  	ArrayList<String> headerlist = new ArrayList<String>();
+	  
 		JsonElement jelement = new JsonParser().parse(value);
 		JsonObject  jobject = jelement.getAsJsonObject();
 		StringBuffer returnVal = new StringBuffer();
@@ -432,6 +707,7 @@ public class NameValueDatabaseService extends DatabaseService {
 		return returnVal.toString();
 	}
 
+
 	/**
 	 * This is the extra handling for SMSProbe and SMSLog. Found that not all
 	 * SMS and CallLogs are equal For some phones, the users might turn off the
@@ -442,6 +718,8 @@ public class NameValueDatabaseService extends DatabaseService {
 	 * @return
 	 */
 	private String convertSMSnCallLog(String value, boolean firstTime) {
+	  	ArrayList rowlist = new ArrayList();
+	  	ArrayList<String> headerlist = new ArrayList<String>();
 		JsonElement jelement = new JsonParser().parse(value);
 		JsonObject  jobject = jelement.getAsJsonObject();
 		StringBuffer returnVal = new StringBuffer();
