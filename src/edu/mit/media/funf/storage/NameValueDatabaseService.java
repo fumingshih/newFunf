@@ -364,6 +364,16 @@ public class NameValueDatabaseService extends DatabaseService {
 		if (probeName.equals("edu.mit.media.funf.probe.builtin.ActivityProbe")){
 			headerlist.add(ProbeKeys.ActivityKeys.ACTIVITY_LEVEL);
 		}
+
+        if (probeName.equals("edu.mit.csail.dig.survey")){
+            //TODO: this probe is developed in AI-sensor codebase, it's using NameValueDatabaseService,
+            // but its keys are not visible to Funf's code
+            headerlist.add("style");
+            headerlist.add("surveyGroup");
+            headerlist.add("question");
+            headerlist.add("options");
+            headerlist.add("answer");
+        }
 		
 		// add timeOffset as the last column
 		headerlist.add(TIMEZONEOFFSET);
@@ -481,6 +491,9 @@ public class NameValueDatabaseService extends DatabaseService {
 		String probeName = jobject.getAsJsonPrimitive("probe").getAsString();
 		Log.i(TAG, "probe name:" + probeName);
 		ArrayList<String> headerlist = prepareHeader(probeName);
+		//it's possible that this is a new probe that added from external that we don't recognize
+		//then we will take all the columns
+
 		ArrayList rowlist = new ArrayList();
 		 
 		jobject.remove("probe"); //remove the redundant property name
