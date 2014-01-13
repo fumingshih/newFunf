@@ -368,10 +368,8 @@ public class NameValueDatabaseService extends DatabaseService {
         if (probeName.equals("edu.mit.csail.dig.survey")){
             //TODO: this probe is developed in AI-sensor codebase, it's using NameValueDatabaseService,
             // but its keys are not visible to Funf's code
-            headerlist.add("style");
             headerlist.add("surveyGroup");
             headerlist.add("question");
-            headerlist.add("options");
             headerlist.add("answer");
         }
 		
