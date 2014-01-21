@@ -37,8 +37,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
+import android.annotation.SuppressLint;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -78,9 +81,23 @@ public class NameValueDatabaseService extends DatabaseService {
 	// public static enum ExportType{CSV, JSON, XML};
 	private String exportType;
 	private String exportRoot;
-//	private ArrayList<String> headerlist = new ArrayList<String>();
-//	private ArrayList rowlist = new ArrayList();
-
+	
+	// The below variables are used for updating the export db status
+	public static final String PREFS_DBEXPORT_STAT = "db_export_status";
+	public static final String STAT_EXPORT_DONE = "export_done";
+	public static final String STAT_EXPORT_ING = "exporting";
+	
+	@SuppressLint("NewApi")
+	private SharedPreferences sharedPreferences;
+		 
+	
+	@SuppressLint("NewApi")
+	@Override
+	public void onCreate() {
+	  super.onCreate();
+	  sharedPreferences =  getSharedPreferences(PREFS_DBEXPORT_STAT, Context.MODE_PRIVATE);  
+	}
+	
 	/**
 	 * The NameValueDatabaseHelper
 	 * 
@@ -118,15 +135,25 @@ public class NameValueDatabaseService extends DatabaseService {
 		db.insertOrThrow(NameValueDatabaseHelper.DATA_TABLE.name, "", cv);
 	}
 
+	private void updateSharedPref(String key, String val){
+ 
+	  final SharedPreferences.Editor sharedPrefsEditor = sharedPreferences.edit();
+
+	  sharedPrefsEditor.putString(key, val);
+	  sharedPrefsEditor.commit();
+	  
+	}
+	
 	/**
 	 * Exports data according to what the intent specify (types)
 	 * 
 	 */
+	@SuppressLint("NewApi")
 	@Override
 	protected void exportDB(SQLiteDatabase db, Intent intent)
 			throws SQLException {
-		// TODO Auto-generated method stub
 		// check NameValueDatabaseHelper, there's only one table called 'data'
+	  	updateSharedPref(PREFS_DBEXPORT_STAT, STAT_EXPORT_ING);
 		String name;
 		String value;
 		long timestamp;
@@ -181,6 +208,7 @@ public class NameValueDatabaseService extends DatabaseService {
 
 		bufferedWriters.clear();
 		c.close();
+		updateSharedPref(PREFS_DBEXPORT_STAT, STAT_EXPORT_DONE);
 	}
 
 	private File getOrCreateFile(String filename) {
@@ -205,6 +233,7 @@ public class NameValueDatabaseService extends DatabaseService {
 
 	}
 
+	@SuppressLint("NewApi")
 	private Pair<BufferedWriter, Boolean> getOrCreateBufferedWriter(File file) {
 
 		BufferedWriter bw = null;
@@ -229,6 +258,7 @@ public class NameValueDatabaseService extends DatabaseService {
 
 	}
 
+	@SuppressLint("NewApi")
 	private void writefile(String probename, String value, long timestamp) {
 		// probename: edu.mit.media.funf.probe.builtin.BluetoothProbe
 		Log.d(TAG, "value:" + value);
@@ -250,7 +280,7 @@ public class NameValueDatabaseService extends DatabaseService {
 		if (this.exportType.equals(EXPORT_CSV)) {
 			Log.i(TAG, "before convertCSV....");
 			try{
-			  	String row = convertCSVnew(value, firstTime.booleanValue());
+			  	String row = convertCSV(value, firstTime.booleanValue());
 				bw.append(row);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -380,8 +410,8 @@ public class NameValueDatabaseService extends DatabaseService {
 	}
 	
 	//helper function to parse running app's taskInfo 
-	private String getAppName(JsonElement taskInfo){
-	  
+	@SuppressLint("NewApi")
+	private String getAppName(JsonElement taskInfo){	  
 //	  {"baseIntent":{
 //				"mAction":"android.intent.action.MAIN",
 //        		"mCategories":["android.intent.category.HOME"],
@@ -480,7 +510,7 @@ public class NameValueDatabaseService extends DatabaseService {
 	  
 	}
 	
-	private String convertCSVnew(String value, boolean firstTime){
+	private String convertCSV(String value, boolean firstTime){
 		JsonElement jelement = new JsonParser().parse(value);
 		JsonObject  jobject = jelement.getAsJsonObject();
 		StringBuffer returnVal = new StringBuffer();
@@ -545,102 +575,6 @@ public class NameValueDatabaseService extends DatabaseService {
 
 	}
 	
-
-	private String convertCSV(String value, boolean firstTime) {
-		// TODO Parse json string and write to csv row
-		// {"BSSID":"28:37:37:27:35:65",
-		// "SSID":"AE",
-		// "capabilities":"[WPA2-PSK-CCMP][ESS]",
-		// "frequency":2437,
-		// "level":-63,
-		// "timestamp":227337138598,
-		// "wifiSsid":{"octets":{"buf":[65,69,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"count":2}},
-		// "probe":"edu.mit.media.funf.probe.builtin.WifiProbe",
-		// "timezoneOffset":-1.4400000E+10}
-	  	ArrayList rowlist = new ArrayList();
-	  	ArrayList<String> headerlist = new ArrayList<String>();
-		JsonElement jelement = new JsonParser().parse(value);
-		JsonObject jobject = jelement.getAsJsonObject();
-		StringBuffer returnVal = new StringBuffer();
-
-		StringBuffer row = new StringBuffer();
-
-		String quote = "\"";
-		String delim = ",";
-		String escapeQuote = "\"\"";
-		String probeName = jobject.getAsJsonPrimitive("probe").getAsString();
-		
-		//Specialize formatting 
-		
-		// Special case for SMSProbe and CallLogProbe because some phones
-		// (users) will disable some fields for privacy
-		if (probeName.equals("edu.mit.media.funf.probe.builtin.SmsProbe")
-				|| probeName
-						.equals("edu.mit.media.funf.probe.builtin.CallLogProbe"))
-			return convertSMSnCallLog(value, firstTime);
-		if (probeName.equals("edu.mit.media.funf.probe.builtin.BluetoothProbe"))
-			return convertBluetooth(value, firstTime);
-
-		jobject.remove("probe"); // remove the redundant property name
-		jobject.remove("mExtras"); // remove redundant data from Location Probe.
-
-		//re-order and message the json object here
-		
-		
-		
-		for (Map.Entry<String, JsonElement> ele : jobject.entrySet()) {
-
-			JsonElement obj = ele.getValue();
-			if (obj instanceof JsonPrimitive) {
-				JsonPrimitive jPrim = obj.getAsJsonPrimitive();
-				Log.i(TAG, "JPrimitive: " + jPrim.toString());
-				rowlist.add(jPrim.toString());
-				// row.append(jPrim.toString());
-			} else {
-				// "wifiSsid":{"octets":{"buf":[65,69,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"count":2}}
-				// the value of "wifiSsid" needs to be changed to 
-				// "{""octets"":{""buf"":[65,69,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],""count"":2}}				
-				//http://stackoverflow.com/questions/12473480/how-should-i-escape-commas-and-speech-marks-in-csv-files-so-they-work-in-excel
-				// first we escape quote by adding a quote in front of it
-				String cleaned = obj.toString().replace(quote, escapeQuote);
-				// anything that's not JsonPrimitive we will make it a String
-				rowlist.add("\"" + cleaned + "\"");
-
-			}
-
-			// if it's first time, we need to write header as well
-
-			if (firstTime) {
-				Log.i(TAG, "We are creating header: " + ele.getKey());
-				headerlist.add(ele.getKey());
-			}
-
-		}// end of loop
-
-		if (firstTime) {
-			String header = StringUtil.join(headerlist, delim);
-			String rowval = StringUtil.join(rowlist, delim);
-			returnVal.append(header);
-			returnVal.append("\n");
-			returnVal.append(rowval);
-			returnVal.append("\n");
-			Log.d(TAG, "Header + row:" + returnVal.toString());
-
-		} else {
-			String rowval = StringUtil.join(rowlist, delim);
-			returnVal.append(rowval);
-			returnVal.append("\n");
-			Log.d(TAG, "Row only:" + returnVal.toString());
-
-		}
-
-		// clean up both arraylists
-		rowlist.clear();
-		headerlist.clear();
-
-		return returnVal.toString();
-
-	}
 
 	private String convertBluetooth(String value, boolean firstTime) {
 	  	ArrayList rowlist = new ArrayList();
