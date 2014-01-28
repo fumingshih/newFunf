@@ -1,4 +1,20 @@
 bin/*
 gen/*
+test/*
 *.log
 local.properties
+*.xml
+*.iml
+*.classpath
+*.gitignore
+
+*.class
+### for intellij ######
+.idea
+*.iml
+
+##### for eclipse ######
+.classpath
+.project
+.settings
+*.properties

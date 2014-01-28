@@ -34,7 +34,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.json.JSONException;
+
 import android.R;
+import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -43,6 +46,7 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -63,6 +67,7 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
 
 import edu.mit.media.funf.Schedule.BasicSchedule;
 import edu.mit.media.funf.Schedule.DefaultSchedule;
@@ -114,15 +119,25 @@ public class FunfManager extends Service {
 	// TODO: triggers
 	
 	// Maybe instances of probes are different from other, and are created in manager
-	
+	private final String TAG = "FunfManager";
 	private Scheduler scheduler;
 	
 	private NotificationManager mNM;
 	private static final int NOTIFICATION = 1111;
+	
+	private static final String PREF_REGISTERPIPELINES = "register.pipelines";
+	//store a mapping between pipeline name and pipeline configuration (jsonstring)
+	//For the use to recreate pipeline when FunfManager is killed and recreated 
+	private Map<String, String> pipelineConfigs;
+	private SharedPreferences sharedPrefPipelines;
+	private Type hashMapType = new TypeToken<HashMap<String, String>>() {}.getType();
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		sharedPrefPipelines = getSharedPreferences(PREF_REGISTERPIPELINES, Context.MODE_PRIVATE);
+
+		
 		this.parser = new JsonParser();
 		this.scheduler = new Scheduler();
 		this.handler = new Handler();
@@ -148,8 +163,27 @@ public class FunfManager extends Service {
 			Pipeline pipeline = gson.fromJson(pipelineConfig, Pipeline.class);
 			registerPipeline(keyName, pipeline);
 		}
+		
+		//initialized previously existing pipelines, if any
+		initializePipelines();
 
 		
+	}
+	// create pipeline from its configurations, each pipeline will have its own 
+	// initialization in the onCreate() constructor
+	private void initializePipelines(){
+	  pipelineConfigs = this.getConfigsFromSharedPref();
+	  Log.i(TAG, "initialize all pipelines");
+	  
+	  List<String> pipeNames = new ArrayList<String>();
+	  
+	  for(String key:pipelineConfigs.keySet()){
+		pipeNames.add(key);		
+	  }  
+	  for(String pipelineName:pipeNames){
+		String jsonConfig = this.pipelineConfigs.get(pipelineName);
+		this.createPipeline(pipelineName, jsonConfig);
+	  }
 	}
 
 	@Override
@@ -279,6 +313,7 @@ public class FunfManager extends Service {
 		return Service.START_FLAG_RETRY; // TODO: may want the last intent always redelivered to make sure system starts up
 	}
 
+	@SuppressLint("NewApi")
 	private void startForeground(){
 		Log.i(TAG, "FunfManager:" + this.toString() + "started as foreground");
 		
@@ -322,6 +357,7 @@ public class FunfManager extends Service {
 	    startForeground(NOTIFICATION, foregroundSvcNotify);
 	}
 	
+	@SuppressLint("NewApi")
 	private void stopForeground(){
 		Log.i(TAG, "FunfManager:" + this.toString() + "stop being foreground");
 		this.stopForeground(true);
@@ -428,9 +464,39 @@ public class FunfManager extends Service {
 		JsonElement pipelineConfig = parser.parse(jsonConfig);
 		Pipeline pipeline = gson.fromJson(pipelineConfig, Pipeline.class);
 		registerPipeline(pipeName, pipeline);
+		pipelineConfigs.put(pipeName, jsonConfig);
+		saveConfigsToSharedPref(pipelineConfigs);
 		
 	}
+	//helper function to persist registered pipelines configurations
+	//so it will be created when funfManager is "recreated"
+	private void saveConfigsToSharedPref(Map<String, String> configs) {
+
+	  Gson gson = new Gson();
+	  String json = gson.toJson(configs, hashMapType);
+	  Log.i(TAG, "Save registered pipelines configs, what we save: " + json);
+      
+	  SharedPreferences.Editor sharedPrefsEditor = sharedPrefPipelines.edit();
+	  sharedPrefsEditor.putString(PREF_REGISTERPIPELINES, json);
+	  sharedPrefsEditor.commit();
+
+	}
+
+	private HashMap<String, String> getConfigsFromSharedPref(){
+	  
+	  String jsonStr = sharedPrefPipelines.getString(PREF_REGISTERPIPELINES, "");	 
+	  Log.i(TAG, "Get registered pipelines configs, what we get: " + jsonStr);
+	  if (jsonStr.length() == 0){
+		return new HashMap<String, String>();
+	  }
+	  
+	  else {Gson gson = new Gson();
+	  	HashMap<String, String> registeredPipelines = gson.fromJson(jsonStr, hashMapType);
+	  	return registeredPipelines;
+	  }	  
+	}
 	
+ 
 	public Pipeline getRegisteredPipeline(String name) {
 		return pipelines.get(name);
 	}
@@ -441,6 +507,7 @@ public class FunfManager extends Service {
 //			existingPipeline.onDestroy();
 			pipelines.remove(name);
 		}
+		pipelineConfigs.remove(name);
 	}
 	
 	public void requestData(DataListener listener, JsonElement probeConfig) {
@@ -681,6 +748,7 @@ public class FunfManager extends Service {
 		return getFunfIntent(context, type, getComponenentUri(component, action));
 	}
 	
+	@SuppressLint("NewApi")
 	public static Intent getFunfIntent(Context context, String type, Uri componentUri) {
 		Intent intent = new Intent();
 		intent.setClass(context, FunfManager.class);
@@ -750,6 +818,7 @@ public class FunfManager extends Service {
 			set(type, getComponenentUri(component, action), schedule);
 		}
 		
+		@SuppressLint("NewApi")
 		public void set(String type, Uri componentAndAction, Schedule schedule) {
 			
 			// Creates pending intents that will call back into FunfManager

@@ -87,15 +87,15 @@ public class NameValueDatabaseService extends DatabaseService {
 	public static final String STAT_EXPORT_DONE = "export_done";
 	public static final String STAT_EXPORT_ING = "exporting";
 	
-	@SuppressLint("NewApi")
-	private SharedPreferences sharedPreferences;
+/*	@SuppressLint("NewApi")
+	private SharedPreferences sharedPreferences;*/
 		 
 	
 	@SuppressLint("NewApi")
 	@Override
 	public void onCreate() {
 	  super.onCreate();
-	  sharedPreferences =  getSharedPreferences(PREFS_DBEXPORT_STAT, Context.MODE_PRIVATE);  
+/*	  sharedPreferences =  getSharedPreferences(PREFS_DBEXPORT_STAT, Context.MODE_PRIVATE);  */
 	}
 	
 	/**
@@ -135,14 +135,14 @@ public class NameValueDatabaseService extends DatabaseService {
 		db.insertOrThrow(NameValueDatabaseHelper.DATA_TABLE.name, "", cv);
 	}
 
-	private void updateSharedPref(String key, String val){
+/*	private void updateSharedPref(String key, String val){
  
 	  final SharedPreferences.Editor sharedPrefsEditor = sharedPreferences.edit();
-
 	  sharedPrefsEditor.putString(key, val);
+	  Log.i(TAG, "export pref->key:" + key + ", val:" + val + "at: " + System.currentTimeMillis());
 	  sharedPrefsEditor.commit();
 	  
-	}
+	}*/
 	
 	/**
 	 * Exports data according to what the intent specify (types)
@@ -153,7 +153,7 @@ public class NameValueDatabaseService extends DatabaseService {
 	protected void exportDB(SQLiteDatabase db, Intent intent)
 			throws SQLException {
 		// check NameValueDatabaseHelper, there's only one table called 'data'
-	  	updateSharedPref(PREFS_DBEXPORT_STAT, STAT_EXPORT_ING);
+	  	// updateSharedPref(PREFS_DBEXPORT_STAT, STAT_EXPORT_ING);
 		String name;
 		String value;
 		long timestamp;
@@ -208,7 +208,7 @@ public class NameValueDatabaseService extends DatabaseService {
 
 		bufferedWriters.clear();
 		c.close();
-		updateSharedPref(PREFS_DBEXPORT_STAT, STAT_EXPORT_DONE);
+		// updateSharedPref(PREFS_DBEXPORT_STAT, STAT_EXPORT_DONE);
 	}
 
 	private File getOrCreateFile(String filename) {
