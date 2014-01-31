@@ -159,6 +159,7 @@ public class NameValueDatabaseService extends DatabaseService {
 		long timestamp;
 
 		exportType = intent.getStringExtra(EXPORT_KEY);
+		Log.i(TAG, "in exportDB, export type:" + exportType);
 		files = new HashMap<String, File>();
 		bufferedWriters = new HashMap<File, BufferedWriter>();
 		fileWriters = new HashMap<File, FileWriter>();
@@ -166,8 +167,8 @@ public class NameValueDatabaseService extends DatabaseService {
 				this.getPackageName())
 				+ File.separator + "export";
 
-		// clear exportRoot if there are previous export files in this folder
-		File exportFolder = new File(exportRoot);
+		// clear exportRoot/exportType if there are previous export files in this folder
+		File exportFolder = new File(exportRoot + File.separator + exportType);
 		if (exportFolder.exists()) {// if it's created all ready
 			CleanAllCleaner cleaner = new CleanAllCleaner();
 			cleaner.clean(exportFolder);

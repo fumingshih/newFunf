@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import android.os.StatFs;
+import android.util.Log;
 
 /**
  * Cleans unneeded files from directories
@@ -36,7 +37,7 @@ public interface DirectoryCleaner {
 
 	public void clean(File directory);
 	
-	
+
 	public static class KeepAll implements DirectoryCleaner {
 		@Override
 		public void clean(File directory) {}
@@ -163,18 +164,18 @@ public interface DirectoryCleaner {
 	}
 	
 	public static class CleanAllCleaner implements DirectoryCleaner {
- 
+		private static final String TAG = "CleanAllCleaner";
 		public CleanAllCleaner(){
 			//do nothing
 		}
 		@Override
 		public void clean(File file) {
 			// TODO Auto-generated method stub
-	    	if(file.isDirectory()){
-	    		 
+		  try{
+	    	if(file.isDirectory()){ 
 	    		//directory is empty, then delete it
-	    		if(file.list().length==0){
-	 
+	    		if(file.list() != null && file.list().length==0){
+	    		  //from javadoc it's possible that file.list() returns null if there's I/O error
 	    		   file.delete();
 	    		   System.out.println("Directory is deleted : " 
 	                                                 + file.getAbsolutePath());
@@ -193,7 +194,7 @@ public interface DirectoryCleaner {
 	        	   }
 	 
 	        	   //check the directory again, if empty then delete it
-	        	   if(file.list().length==0){
+	        	   if(file.list() != null && file.list().length==0){
 	           	     file.delete();
 	        	     System.out.println("Directory is deleted : " 
 	                                                  + file.getAbsolutePath());
@@ -205,6 +206,9 @@ public interface DirectoryCleaner {
 	    		file.delete();
 	    		System.out.println("File is deleted : " + file.getAbsolutePath());
 	    	}
+		  }catch (Exception e){
+			Log.i(TAG, "exception while deleting the file");
+		  }	
 			
 		}
 		
