@@ -93,6 +93,7 @@ public class Launcher extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		launch(context);
+        Log.i(TAG, "In launcher, action: " + intent.getAction());
 	}
 
 }

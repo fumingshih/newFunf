@@ -166,7 +166,8 @@ public class FunfManager extends Service {
 		
 		//initialized previously existing pipelines, if any
 		initializePipelines();
-
+        //make sure that when FunfManger is created or recreated that the user will know
+        startForeground();
 		
 	}
 	// create pipeline from its configurations, each pipeline will have its own 
@@ -310,8 +311,9 @@ public class FunfManager extends Service {
 			}
 
 		}
-		return Service.START_FLAG_RETRY; // TODO: may want the last intent always redelivered to make sure system starts up
-	}
+		//return Service.START_FLAG_RETRY; // TODO: may want the last intent always redelivered to make sure system starts up
+        return Service.START_FLAG_REDELIVERY;
+    }
 
 	@SuppressLint("NewApi")
 	private void startForeground(){
