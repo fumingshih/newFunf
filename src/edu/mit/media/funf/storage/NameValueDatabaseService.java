@@ -443,7 +443,7 @@ public class NameValueDatabaseService extends DatabaseService {
 	      ai = null;
 	  }
 	  final String applicationName = (String) (ai != null ? pm.getApplicationLabel(ai) : "(unknown)");
-	  return applicationName;
+	  return packageName + "," + applicationName;
 	}
 	
 	
